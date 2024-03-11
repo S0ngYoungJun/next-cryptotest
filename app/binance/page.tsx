@@ -1,10 +1,9 @@
 "use client"
-"use client"
 import React, { useState, useEffect, useRef } from 'react';
 import ChartComponent from './chartcomponent';
 import styles from './binance.module.scss';
 import AudioPlayer from '@/components/AudioPlayer';
-import musics from '@/components/utplayer';
+
 
 interface PriceInfo {
   symbol: string;
@@ -18,7 +17,8 @@ const BTCPriceTracker = () => {
   const [error, setError] = useState<string | null>(null);
   const [priceIncreasedCount, setPriceIncreasedCount] = useState(0);
   const [priceDecreasedCount, setPriceDecreasedCount] = useState(0);
-
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null); // State to store audio element
+  const [logMessage, setLogMessage] = useState<string>("");
   const prevPriceRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -37,8 +37,10 @@ const BTCPriceTracker = () => {
           const currentPrice = parseFloat(data.price);
           if (currentPrice > prevPrice) {
             setPriceIncreasedCount(prevCount => prevCount + 1);
+            setPriceDecreasedCount(0); // Reset decrease count
           } else if (currentPrice < prevPrice) {
             setPriceDecreasedCount(prevCount => prevCount + 1);
+            setPriceIncreasedCount(0); // Reset increase count
           }
         }
         prevPriceRef.current = parseFloat(data.price); // 현재 가격을 이전 가격으로 업데이트
@@ -69,40 +71,33 @@ const BTCPriceTracker = () => {
     }
   }, [priceIncreasedCount, priceDecreasedCount]);
 
-  
+   
   const playSongForPriceIncrease = () => {
     // 가격이 3번 오를 때 실행할 노래 재생 로직 추가
-    console.log('Price increased 3 times! Play song for price increase.');
+    setLogMessage('추세상승중! 신나는음악.');
     // 실제 음악 파일을 재생하는 코드 추가
-    // 예시로, AudioPlayer 컴포넌트를 사용하여 음악 파일을 재생합니다.
-    return <AudioPlayer src="/public/audio/awaken.mp3" />;
+    const audio = new Audio("/audio/awaken.mp3");
+    audio.play();
   };
 
   const playSongForPriceDecrease = () => {
     // 가격이 3번 내릴 때 실행할 노래 재생 로직 추가
-    console.log('Price decreased 3 times! Play song for price decrease.');
+    setLogMessage('추세하락중! 우울한음악');
     // 실제 음악 파일을 재생하는 코드 추가
-    // 예시로, AudioPlayer 컴포넌트를 사용하여 음악 파일을 재생합니다.
-    return <AudioPlayer src="/public/audio/lofi-study.mp3" />;
+    const audio = new Audio("/audio/lofi-study.mp3");
+    audio.play();
   };
-
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div>
+    <div className={styles.root}>
       <h1>BTCUSDT Price Tracker</h1>
       <div className={styles.chart}><ChartComponent prices={prices} /></div>
-      <ul>
-        {prices.map((priceInfo, index) => (
-          <li key={index}>
-            {priceInfo.symbol}: ${priceInfo.price} at {priceInfo.timestamp.toLocaleTimeString()}
-          </li>
-        ))}
-      </ul>
-
-      <div><AudioPlayer src="/audio/lofi-study.mp3" />;</div>
+      <div className={styles.font}>{logMessage}</div>
+      <div>노래A <AudioPlayer src="/audio/awaken.mp3"/></div>
+      <div>노래B <AudioPlayer src="/audio/midnight-138704.mp3" /></div>
     </div>
   );
 };
