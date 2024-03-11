@@ -1,8 +1,11 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+"use client"
+import React, { useState, useEffect, useRef } from 'react';
 import ChartComponent from './chartcomponent';
-import styles from './binance.module.scss'
-// 가격 정보를 저장할 객체의 인터페이스 정의
+import styles from './binance.module.scss';
+import AudioPlayer from '@/components/AudioPlayer';
+import musics from '@/components/utplayer';
+
 interface PriceInfo {
   symbol: string;
   price: string;
@@ -13,9 +16,12 @@ const BTCPriceTracker = () => {
   const [prices, setPrices] = useState<PriceInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [priceIncreasedCount, setPriceIncreasedCount] = useState(0);
+  const [priceDecreasedCount, setPriceDecreasedCount] = useState(0);
+
+  const prevPriceRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // BTCUSDT 가격 정보를 가져오는 함수
     const fetchPrice = async () => {
       try {
         const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
@@ -23,10 +29,19 @@ const BTCPriceTracker = () => {
           throw new Error('Failed to fetch price');
         }
         const data = await response.json();
-        // 현재 시간과 함께 가격 정보 추가
         const newPriceInfo: PriceInfo = { symbol: data.symbol, price: data.price, timestamp: new Date() };
-        // 상태 업데이트 시 불변성 유지
         setPrices(prevPrices => [...prevPrices, newPriceInfo]);
+        // 이전 가격과 비교하여 상승/하락 횟수 증가
+        if (prevPriceRef.current !== null) {
+          const prevPrice = prevPriceRef.current;
+          const currentPrice = parseFloat(data.price);
+          if (currentPrice > prevPrice) {
+            setPriceIncreasedCount(prevCount => prevCount + 1);
+          } else if (currentPrice < prevPrice) {
+            setPriceDecreasedCount(prevCount => prevCount + 1);
+          }
+        }
+        prevPriceRef.current = parseFloat(data.price); // 현재 가격을 이전 가격으로 업데이트
       } catch (error) {
         setError(error instanceof Error ? error.message : String(error));
       } finally {
@@ -34,12 +49,43 @@ const BTCPriceTracker = () => {
       }
     };
 
-    fetchPrice(); // 컴포넌트 마운트 시 최초 호출
-    const interval = setInterval(fetchPrice,30000); // 1분마다 fetchPrice 함수 반복 호출
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 20000);
 
-    // 컴포넌트 언마운트 시 setInterval 정리
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    // 가격 상승/하락 횟수가 3번일 때 노래 재생
+    if (priceIncreasedCount === 3) {
+      playSongForPriceIncrease();
+      // 횟수 초기화
+      setPriceIncreasedCount(0);
+    }
+    if (priceDecreasedCount === 3) {
+      playSongForPriceDecrease();
+      // 횟수 초기화
+      setPriceDecreasedCount(0);
+    }
+  }, [priceIncreasedCount, priceDecreasedCount]);
+
+  
+  const playSongForPriceIncrease = () => {
+    // 가격이 3번 오를 때 실행할 노래 재생 로직 추가
+    console.log('Price increased 3 times! Play song for price increase.');
+    // 실제 음악 파일을 재생하는 코드 추가
+    // 예시로, AudioPlayer 컴포넌트를 사용하여 음악 파일을 재생합니다.
+    return <AudioPlayer src="/public/audio/awaken.mp3" />;
+  };
+
+  const playSongForPriceDecrease = () => {
+    // 가격이 3번 내릴 때 실행할 노래 재생 로직 추가
+    console.log('Price decreased 3 times! Play song for price decrease.');
+    // 실제 음악 파일을 재생하는 코드 추가
+    // 예시로, AudioPlayer 컴포넌트를 사용하여 음악 파일을 재생합니다.
+    return <AudioPlayer src="/public/audio/lofi-study.mp3" />;
+  };
+
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -55,6 +101,8 @@ const BTCPriceTracker = () => {
           </li>
         ))}
       </ul>
+
+      <div><AudioPlayer src="/audio/lofi-study.mp3" />;</div>
     </div>
   );
 };

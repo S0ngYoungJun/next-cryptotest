@@ -24,7 +24,7 @@ const HomePage = () => {
         }
         const jsonData = await response.json();
         console.log(jsonData.data.data)
-        const filteredData = jsonData.data.data.find((coin) => coin.id === 2781);
+        const filteredData = jsonData.data.data.find((coin : any) => coin.id === 2781);
         console.log(filteredData)
       if (filteredData) {
         setData([filteredData]); // 배열 형태로 유지하고 싶다면 이렇게 할 수 있습니다.
